@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Credit Policy Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width chat column, header with progress, scrolling thread, answer tray at the foot */
+:root{
+  --ground:#dfe7e2; --wall:#eef3ef; --head:#0f4f43; --headInk:#f2f7f4;
+  --bot:#ffffff; --me:#d4f2de; --ink:#13201b; --muted:#5d6f67; --line:#d5dfd9;
+  --accent:#0e7a5c; --accentInk:#ffffff; --chip:#ffffff; --chipInk:#0e6b51;
+  --good:#1d7f45; --goodBg:#e3f4ea; --bad:#b3362c; --badBg:#fbe7e5;
+  --font:"Noto Sans", "Segoe UI", Roboto, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0a110e; --wall:#0f1714; --head:#16302a; --headInk:#e3ece7;
+    --bot:#1c2723; --me:#1b4a3a; --ink:#e3ece7; --muted:#93a59d; --line:#2b3934;
+    --accent:#2fae84; --accentInk:#06130e; --chip:#1c2723; --chipInk:#6fd3ad;
+    --good:#5fd08f; --goodBg:#163325; --bad:#f08b80; --badBg:#3a1d1a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0a110e; --wall:#0f1714; --head:#16302a; --headInk:#e3ece7;
+  --bot:#1c2723; --me:#1b4a3a; --ink:#e3ece7; --muted:#93a59d; --line:#2b3934;
+  --accent:#2fae84; --accentInk:#06130e; --chip:#1c2723; --chipInk:#6fd3ad;
+  --good:#5fd08f; --goodBg:#163325; --bad:#f08b80; --badBg:#3a1d1a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.45 var(--font)}
+.app{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;background:var(--wall);box-shadow:0 0 0 1px var(--line)}
+header{background:var(--head);color:var(--headInk);padding:12px 16px 10px;display:flex;flex-direction:column;gap:8px}
+.who{display:flex;align-items:center;gap:12px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accentInk);display:grid;place-items:center;font-weight:700;font-size:15px;flex:none}
+.who b{display:block;font-weight:600;font-size:16px}
+.who small{opacity:.8;font-size:12.5px}
+.prog{height:4px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:#7fe0b8;transition:width .3s}
+.thread{flex:1;overflow-y:auto;padding:14px 16px 8px;display:flex;flex-direction:column;gap:6px}
+.r{display:flex}.r.me{justify-content:flex-end}
+.b{max-width:86%;min-width:0;background:var(--bot);padding:8px 11px 6px;border-radius:10px;box-shadow:0 1px 1px rgba(0,0,0,.08);overflow-wrap:anywhere}
+.r.bot .b{border-top-left-radius:3px}
+.r.me .b{background:var(--me);border-top-right-radius:3px}
+.t{display:block;text-align:right;font-size:11px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.qn{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--chipInk);margin-bottom:2px}
+.opts{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px;max-width:86%}
+.opts button{display:flex;gap:10px;align-items:flex-start;text-align:left;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;cursor:pointer}
+.opts button .k{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--chipInk);color:var(--chipInk);display:grid;place-items:center;font-size:12px;font-weight:700}
+.opts button:hover:not(:disabled){border-color:var(--accent)}
+.opts button:focus-visible,.act button:focus-visible,.foot button:focus-visible,.foot input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opts button:disabled{cursor:default;opacity:.5}
+.opts button.picked{opacity:1;border-color:var(--accent);background:var(--me)}
+.typing{font-size:12.5px;color:var(--muted);padding:0 16px;height:20px}
+.foot{display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bot);border-top:1px solid var(--line)}
+.foot input{flex:1;min-width:0;border:1px solid var(--line);border-radius:22px;padding:10px 14px;font:inherit;background:var(--wall);color:var(--ink)}
+.foot button,.act button{border:0;border-radius:22px;padding:10px 16px;font:inherit;font-weight:600;background:var(--accent);color:var(--accentInk);cursor:pointer}
+.act{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
+.act button.ghost{background:var(--chip);color:var(--chipInk);border:1px solid var(--line)}
+.score{display:flex;flex-direction:column;gap:2px}
+.score .big{font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.score .pct{font-size:13px;color:var(--muted)}
+.verdict{display:inline-block;margin-top:6px;padding:2px 10px;border-radius:12px;font-size:12.5px;font-weight:600}
+.v-good{background:var(--goodBg);color:var(--good)} .v-bad{background:var(--badBg);color:var(--bad)}
+.rev .mark{font-weight:700}
+.rev .ok{color:var(--good)} .rev .no{color:var(--bad)}
+.rev .line{display:block;font-size:13.5px;margin-top:3px}
+.rev .why{display:block;font-size:13px;color:var(--muted);margin-top:4px}
+.hidden{display:none}
+@media (prefers-reduced-motion: reduce){.prog i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="who">
+      <div class="av" aria-hidden="true">CQ</div>
+      <div><b>Credit Policy Quiz</b><small id="sub">Branch team only · 10 questions</small></div>
+    </div>
+    <div class="prog" aria-hidden="true"><i id="bar"></i></div>
+  </header>
+  <div class="thread" id="thread" aria-live="polite"></div>
+  <div class="typing" id="typing"></div>
+  <form class="foot" id="foot" autocomplete="off">
+    <label for="nameIn" class="hidden">Your name</label>
+    <input id="nameIn" aria-label="Your name" placeholder="Type your name" maxlength="40">
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+/* ========= QUIZ CONTENT (edit here) =========
+   ans = index of the correct option (0 = A, 1 = B, 2 = C, 3 = D) */
+const QUIZ = {
+  title: "Credit Policy Quiz",
+  source: "Credit Guideline 3.0 and Bulletins 04 and 06",
+  questions: [
+    { q:"A bank-salaried applicant with net monthly income of ₹40,000 applies for LAP. What is the maximum FOIR?",
+      opts:["50%","55%","60%","65%"], ans:1,
+      why:"Bulletin 06, salaried documented, ₹25k–50k slab: HL 60%, LAP 55%. LAP is 5% below HL in every slab." },
+    { q:"A cash-salaried applicant earns ₹30,000 a month and applies for LAP. What is the maximum FOIR?",
+      opts:["45%","50%","55%","60%"], ans:2,
+      why:"Bulletin 06, cash salary: up to ₹25k is HL 55% / LAP 50%; ₹25k–50k is HL 60% / LAP 55%." },
+    { q:"A cash-salaried applicant actually receives ₹65,000 a month. How much salary can be considered?",
+      opts:["₹65,000, the full salary","₹48,750, which is 75%","Not eligible under cash salary","₹50,000, the maximum allowed"], ans:3,
+      why:"Cash salary considered is capped at ₹50,000. The cap is a not-allowed deviation." },
+    { q:"In an Affordable case, what is the minimum age of an applicant whose income is considered?",
+      opts:["18 years","21 years","23 years","25 years"], ans:1,
+      why:"Guideline 3.0: earning members must be 21 in Budget and Affordable, 23 in Prime." },
+    { q:"A co-applicant who is only a property co-owner (income not considered) must be at least:",
+      opts:["21 years","23 years","25 years","18 years"], ans:3,
+      why:"Non-income co-applicants need to be 18, in every segment." },
+    { q:"What is the maximum age at loan maturity for a self-employed applicant whose income is considered?",
+      opts:["60 years","65 years","70 years","85 years"], ans:2,
+      why:"Self-employed: 70 at maturity. A 58-year-old gets at most 12 years (144 months)." },
+    { q:"The applicant's father, aged 78, owns the property but his income is not considered. Can he be on the structure?",
+      opts:["Yes, up to 85 years, with a legal heir NOC","No, the limit is 70","Only if his rental income is considered","Yes, with no age limit"], ans:0,
+      why:"Non-earning property owners are allowed up to 85 with a legal heir NOC. If rental income is used, the limit is 70." },
+    { q:"Which set is the core income documentation for a bank-salaried applicant?",
+      opts:["3 months' salary slips + 6 months' salary-credited bank statement + job vintage proof","6 months' salary slips + 12 months' bank statement","Salary certificate + office visit + guarantor","2 years' ITR + 12 months' bank statement"], ans:0,
+      why:"Bank salaried: 3 months' slips, 6 months' salary banking, job vintage proof. Form 16 if gross is ₹50k or more." },
+    { q:"Which is MANDATORY for a cash-salaried case?",
+      opts:["Form 16 for 1 year","Two years' ITR","Udyam registration","Salary certificate, positive office visit and a guarantor with CIBIL 700+"], ans:3,
+      why:"Cash salary needs a salary certificate, 6 months' banking, a positive office visit and a guarantor with CIBIL of at least 700." },
+    { q:"A self-employed LAP of ₹35 lakh is being logged. Which documents are due AT LOGIN?",
+      opts:["Only KYC and IMD; the rest at PD","KYC, IMD and 6 months' bank statement","KYC, IMD, 2 years' ITR, 12 months' banking of all accounts, business proof and obligation SOA","KYC, IMD and Udyam only"], ans:2,
+      why:"Bulletin 04: above ₹15L, business proof and SOA move to login; above ₹30L, 2 years' ITR with computation is due at login too." }
+  ]
+};
+/* ============================================ */
+
+const L = ["A","B","C","D"];
+const thread = document.getElementById('thread'), typing = document.getElementById('typing');
+const foot = document.getElementById('foot'), nameIn = document.getElementById('nameIn'), bar = document.getElementById('bar');
+let S = { name:"", i:-1, picks:[], busy:false };
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clock = () => new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+const down = () => { thread.scrollTop = thread.scrollHeight; };
+const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function bubble(who, html){
+  const r = document.createElement('div'); r.className = 'r ' + who;
+  const b = document.createElement('div'); b.className = 'b';
+  b.innerHTML = html + '<span class="t">' + clock() + (who === 'me' ? ' ✓✓' : '') + '</span>';
+  r.appendChild(b); thread.appendChild(r); down(); return r;
+}
+function bot(html, delay){
+  return new Promise(res => {
+    S.busy = true; typing.textContent = 'Quiz bot is typing…';
+    setTimeout(() => { typing.textContent = ''; const r = bubble('bot', html); S.busy = false; res(r); }, reduce ? 0 : (delay ?? 500));
+  });
+}
+function addBlock(el){ thread.appendChild(el); down(); }
+
+async function start(){
+  thread.innerHTML = ''; S = { name:S.name, i:-1, picks:[], busy:false }; bar.style.width = '0%';
+  await bot('Namaste 🙏 Welcome to the <b>' + esc(QUIZ.title) + '</b> for our branch team.<br><br>' + QUIZ.questions.length +
+    ' questions on FOIR, age norms and documents, from ' + esc(QUIZ.source) + '.<br><br>Tap one option per question. Your score and the correct answers appear at the end.', 300);
+  if (S.name){ askReady(); }
+  else { await bot('Please type your <b>full name</b> (first name and surname) to begin.'); foot.classList.remove('hidden'); nameIn.focus(); }
+}
+
+/* ========= BRANCH STAFF =========
+   Names are stored only as one-way codes, so the staff list cannot be read from this page.
+   To add or remove someone, ask for an updated file. */
+const SALT = 'bbsr-cq-2026';
+const STAFF_KEYS = new Set(["113aaa4c8be7926082256c45","635f95ea7edd31f8b4545728","59824d522e4daa352a788e00","6ecb2521ec3242deb2087ddb","7a225b530e53585dba64c5f6","19dea4bf2c9bdd9d389b6963","8301606f5d66d2515b823d41","323e25c29a29d17126045a6e","ccc29243891465ca79dcb0e7","e93a0c73adb59d503b6e0f74","a8d147f8c6cd4aa14cf8743b","a7f5be9ec0bdcbfb07d9d4bb","94b6914d6e27bb492f502899","fa40e9613e84733b554551e0"]);
+/* ================================= */
+
+// Spelling-tolerant: compares the consonant outline of first name and surname (Behra = Behera, Sahu = Sahoo, Patnaik = Pattanayak)
+function sk(w){
+  w = w.toLowerCase().replace(/[^a-z]/g, '').replace(/sh/g, 's').replace(/th/g, 't').replace(/ph/g, 'p').replace(/w/g, 'v');
+  return (w[0] || '') + w.slice(1).replace(/[aeiouyh]/g, '').replace(/(.)\1+/g, '$1');
+}
+async function sha(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 24);
+}
+const titleCase = s => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+async function findStaff(input){
+  const t = input.trim().split(/\s+/).filter(Boolean);
+  if (t.length < 2) return { need: 'full' };
+  const hit = STAFF_KEYS.has(await sha(SALT + sk(t[0]) + '|' + sk(t.at(-1))));
+  return { name: hit ? titleCase(input) : null };
+}
+
+let tries = 0;
+foot.addEventListener('submit', async e => {
+  e.preventDefault(); const v = nameIn.value.trim(); if (!v || S.busy) return;
+  nameIn.value = ''; foot.classList.add('hidden'); bubble('me', esc(v));
+  const r = await findStaff(v);
+  if (r.need === 'full'){
+    await bot('Please type your <b>full name</b>, first name and surname (for example: Sagar Das).');
+    foot.classList.remove('hidden'); nameIn.focus(); return;
+  }
+  if (r.name){ S.name = r.name; await bot('✅ Welcome, <b>' + esc(r.name) + '</b>! You are on the branch team list.'); return askReady(); }
+  tries++;
+  if (tries >= 3){
+    return bot('Sorry, this quiz is only for our branch team members. Your name is not on the list. If you think this is a mistake, please contact the branch credit team.');
+  }
+  await bot('❌ Sorry, <b>' + esc(v) + '</b> is not on our branch team list. This quiz is only for branch employees.<br><br>Please check the spelling and type your full name again (' + (3 - tries) + (3 - tries === 1 ? ' try' : ' tries') + ' left).');
+  foot.classList.remove('hidden'); nameIn.focus();
+});
+
+async function askReady(){
+  await bot('Ready to begin, <b>' + esc(S.name.split(' ')[0]) + '</b>?');
+  const a = document.createElement('div'); a.className = 'act';
+  const go = document.createElement('button'); go.textContent = 'Start quiz';
+  go.onclick = () => { if (S.busy) return; a.remove(); bubble('me', 'Start quiz'); next(); };
+  a.appendChild(go); addBlock(a); go.focus();
+}
+
+async function next(){
+  S.i++;
+  if (S.i >= QUIZ.questions.length) return finish();
+  const Q = QUIZ.questions[S.i], n = QUIZ.questions.length;
+  await bot('<span class="qn">Question ' + (S.i + 1) + ' of ' + n + '</span>' + esc(Q.q));
+  const box = document.createElement('div'); box.className = 'opts'; box.setAttribute('role','group');
+  Q.opts.forEach((o, k) => {
+    const btn = document.createElement('button');
+    btn.innerHTML = '<span class="k">' + L[k] + '</span><span>' + esc(o) + '</span>';
+    btn.onclick = () => pick(k, box, btn);
+    box.appendChild(btn);
+  });
+  addBlock(box);
+}
+
+function pick(k, box, btn){
+  if (S.busy || box.dataset.done) return;
+  box.dataset.done = '1'; btn.classList.add('picked');
+  box.querySelectorAll('button').forEach(b => b.disabled = true);
+  S.picks[S.i] = k;
+  bubble('me', L[k] + '. ' + esc(QUIZ.questions[S.i].opts[k]));
+  bar.style.width = ((S.i + 1) / QUIZ.questions.length * 100) + '%';
+  next();
+}
+
+function verdict(sc, n){
+  const p = sc / n;
+  if (p >= 0.9) return ['Excellent', 'v-good'];
+  if (p >= 0.7) return ['Good, revise the misses', 'v-good'];
+  if (p >= 0.5) return ['Needs revision', 'v-bad'];
+  return ['Please re-read the policy', 'v-bad'];
+}
+
+async function finish(){
+  const n = QUIZ.questions.length;
+  const sc = QUIZ.questions.reduce((s, Q, i) => s + (S.picks[i] === Q.ans ? 1 : 0), 0);
+  const [vt, vc] = verdict(sc, n);
+  await bot('All done, ' + esc(S.name) + '! Checking your answers…', 600);
+  await bot('<div class="score"><span>' + esc(S.name) + ', your score</span><span class="big">' + sc + ' / ' + n +
+    '</span><span class="pct">' + Math.round(sc / n * 100) + '% correct · ' + new Date().toLocaleDateString() +
+    '</span><span><span class="verdict ' + vc + '">' + vt + '</span></span></div>', 700);
+  await bot('Here are your answers 👇', 300);
+  QUIZ.questions.forEach((Q, i) => {
+    const ok = S.picks[i] === Q.ans;
+    bubble('bot', '<div class="rev"><span class="qn">Question ' + (i + 1) + '</span>' +
+      '<span class="mark ' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓ Correct' : '✗ Wrong') + '</span><br>' + esc(Q.q) +
+      '<span class="line">Your answer: <b>' + L[S.picks[i]] + '. ' + esc(Q.opts[S.picks[i]]) + '</b></span>' +
+      (ok ? '' : '<span class="line">Correct answer: <b>' + L[Q.ans] + '. ' + esc(Q.opts[Q.ans]) + '</b></span>') +
+      '<span class="why">' + esc(Q.why) + '</span></div>');
+  });
+  const a = document.createElement('div'); a.className = 'act';
+  const cp = document.createElement('button'); cp.textContent = 'Copy my result';
+  const rt = document.createElement('button'); rt.className = 'ghost'; rt.textContent = 'Retake quiz';
+  const text = QUIZ.title + ' – ' + S.name + ': ' + sc + '/' + n + ' (' + Math.round(sc / n * 100) + '%) on ' + new Date().toLocaleDateString();
+  cp.onclick = () => {
+    const done = () => { cp.textContent = 'Copied – paste it in WhatsApp'; };
+    try { navigator.clipboard.writeText(text).then(done, () => fallback(text, cp)); } catch(e){ fallback(text, cp); }
+  };
+  rt.onclick = () => { if (!S.busy) start(); };
+  a.append(cp, rt); addBlock(a);
+  await bot('Tap <b>Copy my result</b> and paste it in the WhatsApp group so your trainer can see your score.', 400);
+}
+
+function fallback(text, btn){
+  const r = bubble('bot', '<span class="qn">Your result</span><span id="res">' + esc(text) + '</span>');
+  const el = r.querySelector('#res'); el.removeAttribute('id');
+  const range = document.createRange(); range.selectNodeContents(el);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  btn.textContent = 'Text selected – copy it';
+}
+
+foot.classList.add('hidden');
+start();
+</script>
+
+</body>
+</html>
